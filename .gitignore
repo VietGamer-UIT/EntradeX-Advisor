@@ -1,0 +1,6 @@
+# Bỏ qua các file rác của Visual Studio
+.vs/
+x64/
+Debug/
+Release/
+*.user

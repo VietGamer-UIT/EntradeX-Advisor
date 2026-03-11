@@ -1,6 +1,7 @@
 # 📈 Smart Advisor Bot - Tối ưu hóa đầu tư VN30 (Entrade X by DNSE)
 
 ![C++](https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-CC292B?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
 ![Visual Studio](https://img.shields.io/badge/Visual_Studio-5C2D91?style=for-the-badge&logo=visual-studio&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Completed-brightgreen?style=for-the-badge)
 
@@ -9,35 +10,46 @@
 
 Dự án này giải quyết bài toán cá nhân của mình: Tối ưu hóa lợi nhuận cho chiến lược đầu tư thụ động (DCA) vào chứng chỉ quỹ ETF mô phỏng chỉ số VN30 (E1VFVN30). Thay vì trung bình giá mù quáng, Bot sẽ phân tích vĩ mô để hướng dẫn mình cách đi tiền thông minh nhất.
 
-> 🔥 **Bản cập nhật V2.0:** Hệ thống tích hợp thêm thư viện `<filesystem>` và `<fstream>`, cho phép **tự động quét và đọc toàn bộ file lịch sử giao dịch (.csv)**. Từ đó tính toán chính xác số lượng chứng chỉ quỹ đang nắm giữ và **Giá vốn trung bình**, giúp lời khuyên bám sát 100% tình trạng danh mục thực tế.
+> 🔥 **Bản cập nhật V3.0 (SENIOR EDITION):** Nâng cấp toàn diện với giao diện Menu tương tác, tích hợp **SQL Server** để lưu trữ nhật ký tự động. Đặc biệt, dự án áp dụng trực tiếp Cấu trúc dữ liệu & Thuật toán (**DSA**): Dùng **Stack** để xây dựng tính năng Hoàn tác (Undo) và tuyệt kỹ **Two Pointers** để phân tích chu kỳ tích lũy tối ưu dài hạn.
 
-> **🤖 Vibe Coding & AI Collaboration:** > Dự án này được phát triển theo phong cách **Vibe Coding**. Mình (với kiến thức của một sinh viên CNTT năm nhất) chịu trách nhiệm thiết kế logic hệ thống, luật đầu tư (Smart DCA), và luồng UI/UX. Toàn bộ mã nguồn C++, kiến trúc Lập trình hướng đối tượng (OOP) và kiến thức tài chính vĩ mô được hiện thực hóa với sự trợ giúp đắc lực của **Google Gemini**.
+> **🤖 Vibe Coding & AI Collaboration:** > Dự án này được phát triển theo phong cách **Vibe Coding**. Mình (với kiến thức của một sinh viên CNTT năm nhất) chịu trách nhiệm thiết kế logic hệ thống, luật đầu tư (Smart DCA), và luồng UI/UX. Toàn bộ mã nguồn C++, kiến trúc Lập trình hướng đối tượng (OOP), Cấu trúc dữ liệu và kiến thức tài chính vĩ mô được hiện thực hóa với sự trợ giúp đắc lực của **Google Gemini**.
 
-## 🧠 Cơ chế ra quyết định (Smart DCA Logic)
-Hệ thống sử dụng 2 chỉ báo vĩ mô cốt lõi (P/E của VN-Index và Lãi suất ngân hàng) để tự động phân bổ tỷ trọng vốn:
-- 🟢 **Thị trường bò (Bull Market) - Ổn định (11 <= P/E <= 15):** Khuyên giải ngân 80% ngân sách tháng, giữ 20% tiền mặt nhàn rỗi trên Entrade X.
-- 🟡 **Thị trường bong bóng (Bubble) - Hưng phấn (P/E > 15):** Rủi ro cao. Khuyên chỉ giải ngân 40%, tích lũy phần còn lại để phòng thủ.
-- 🔴 **Thị trường gấu (Bear Market) - Hoảng loạn (P/E < 11 hoặc Lãi suất > 8%):** Gửi tín hiệu đáy. Khuyên dồn toàn bộ quỹ dự phòng để bắt đáy kịch kim (x2 ngân sách).
+## 🧠 Tính năng cốt lõi (V3.0)
 
-## 🏗️ Kiến trúc Hệ thống (OOP Architecture)
-Dự án áp dụng chuẩn Lập trình hướng đối tượng (Object-Oriented Programming):
-- `MarketDataFetcher`: Lớp chịu trách nhiệm giao tiếp với người dùng, thu thập dữ liệu vĩ mô và giá chứng chỉ quỹ real-time.
-- `SmartAdvisorBot`: "Não bộ" của hệ thống, quét file lịch sử CSV, đóng gói thuật toán tài chính, đưa ra quyết định và in ra phiếu lệnh giả lập chuẩn giao diện Entrade X.
+### 1. Cơ chế tư vấn (Smart DCA Logic) & Quét CSV
+Hệ thống sử dụng P/E của VN-Index và Lãi suất ngân hàng để tự động phân bổ tỷ trọng vốn:
+- 🟢 **Thị trường bò (Bull Market) - Ổn định (11 <= P/E <= 15):** Khuyên giải ngân 80% ngân sách.
+- 🟡 **Thị trường bong bóng (Bubble) - Hưng phấn (P/E > 15):** Khuyên chỉ giải ngân 40%, phòng thủ.
+- 🔴 **Thị trường gấu (Bear Market) - Hoảng loạn (P/E < 11 hoặc Lãi suất > 8%):** Bắt đáy kịch kim (x2 ngân sách).
+*Bot tự động đọc file `.csv` xuất từ Entrade X để tính toán Giá vốn trung bình và số lượng CCQ đang nắm giữ, giúp lời khuyên bám sát thực tế.*
 
-## 📂 Hướng dẫn chuẩn bị dữ liệu lịch sử (File CSV)
-Để Bot hoạt động thông minh nhất, bạn cần nạp lịch sử giao dịch từ app Entrade X vào hệ thống:
-1. **Xuất dữ liệu:** Lên web/app Entrade X, vào phần *Lịch sử khớp lệnh*, chọn mốc thời gian và xuất file báo cáo (thường là file Excel `.xlsx`).
-2. **Chuyển đổi:** Mở file Excel đó lên, chọn `Save As` và lưu lại dưới định dạng **CSV (Comma delimited) (*.csv)**.
-3. **Làm sạch dữ liệu (QUAN TRỌNG):** Trong file CSV, bạn phải bôi đen cột *Khối lượng* và *Giá khớp*, đổi định dạng về dạng số bình thường (General/Number) và **xóa bỏ dấu phẩy ngăn cách hàng nghìn** (Ví dụ: `36,430` phải sửa thành `36430`). Nếu không C++ sẽ đọc sai cột.
-4. **Nạp dữ liệu:** Copy tất cả các file `.csv` của bạn và dán thẳng vào thư mục chứa file `main.cpp` của dự án. Bot sẽ tự động lùng sục và cộng dồn dữ liệu của tất cả các file nó tìm thấy.
-*(Lưu ý: File `.gitignore` đã chặn upload file `.csv`, nên thông tin giao dịch cá nhân của bạn sẽ an toàn tuyệt đối ở máy tính local, không bị đẩy lên mạng).*
+### 2. Quản lý Lịch sử bằng SQL Server
+Thay vì ghi ra file text đơn thuần, mọi điều kiện thị trường và lời khuyên của Bot đều được lưu trữ trực tiếp vào CSDL SQL Server (bảng `Market_Condition` và `Bot_Advice`) thông qua kết nối ODBC C++, sẵn sàng cho việc query và thống kê sau này.
 
-## 🚀 Hướng dẫn sử dụng
-1. Clone dự án về máy.
-2. Đảm bảo bạn đã thả các file `.csv` lịch sử (nếu có) vào chung thư mục code.
-3. Mở file `.slnx` bằng Visual Studio và bấm `F5` chạy chương trình.
-4. **Nhập liệu linh hoạt:** Trả lời các câu hỏi trên màn hình console (Nhập ngân sách tháng này của bạn, P/E, Lãi suất và Giá E1VFVN30 hiện hành).
-5. Nhận phiếu lệnh tư vấn và mở app Entrade X để thực thi!
+### 3. Thực chiến Cấu trúc dữ liệu & Thuật toán (DSA)
+- **Hoàn tác quyết định (Undo with Stack):** Lưu vết các thao tác của người dùng vào `std::stack`. Nếu chọn sai, có thể dễ dàng quay lui (pop) trạng thái trước đó.
+- **Phân tích chu kỳ tối ưu (Two Pointers):** Quét mảng dữ liệu P/E lịch sử bằng 2 con trỏ (Left, Right) để tìm ra "cửa sổ" (Window) thời gian gom hàng an toàn dài nhất (P/E liên tục duy trì dưới 15).
+
+## 🏗️ Kiến trúc Hệ thống
+- **OOP:** `MarketDataFetcher` (Lấy dữ liệu vĩ mô & giá), `SmartAdvisorBot` (Não bộ xử lý logic, kết nối DB, thực thi thuật toán).
+- **DBMS:** Cơ sở dữ liệu quan hệ SQL Server.
+
+## ⚙️ Hướng dẫn cài đặt & Chạy dự án
+### Bước 1: Khởi tạo Cơ sở dữ liệu
+1. Mở **SQL Server Management Studio (SSMS)**.
+2. Mở file `EntradeX-Advisor.sql` đính kèm trong thư mục.
+3. Bấm `Execute` để chạy script. Script sẽ tự tạo Database `EntradeX_Advisor` và 2 bảng liên quan.
+
+### Bước 2: Chuẩn bị dữ liệu lịch sử Entrade X (Tùy chọn)
+1. Xuất file lịch sử khớp lệnh từ Entrade X (dạng `.xlsx`), lưu lại (Save As) dưới định dạng **CSV (Comma delimited) (*.csv)**.
+2. **QUAN TRỌNG:** Mở file CSV, đổi định dạng cột Khối lượng/Giá khớp về Number, xóa bỏ dấu phẩy ngăn cách hàng nghìn (VD: `36,430` $\rightarrow$ `36430`).
+3. Dán các file `.csv` vào chung thư mục chứa file `main.cpp`. *(Lưu ý: `.gitignore` đã chặn upload file CSV, dữ liệu tài chính của bạn hoàn toàn bảo mật tại máy).*
+
+### Bước 3: Build & Run
+1. Đảm bảo máy đã cài đặt **ODBC Driver 17 for SQL Server**.
+2. Clone dự án, mở file `EntradeX-Advisor.slnx` bằng Visual Studio.
+3. Chỉnh sửa chuỗi kết nối (Connection String) trong file `SmartAdvisorBot.cpp` nếu Tên Server của bạn khác với `.\SQLEXPRESS`.
+4. Bấm `F5` chạy chương trình và trải nghiệm qua Menu Tương tác!
 
 ---
 *Developed by Đoàn Hoàng Việt (Việt Gamer) - Sinh viên UIT (Trường đại học Công nghệ Thông tin - ĐHQG TP.HCM).*

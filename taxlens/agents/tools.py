@@ -104,25 +104,32 @@ def tool_save_audit_trail(action: str, decision: str, user: str = "Manager") -> 
 def tool_parse_vn_einvoice_xml(xml_content: str) -> Dict[str, Any]:
     """
     Data Analyst Task: Parses Vietnamese E-Invoice XML using xml.etree.ElementTree.
-    Extracts MST (Tax Code), Total amount, and VAT amount.
+    Extracts MST (Tax Code), Total amount, and VAT amount safely ignoring namespaces.
     """
     import xml.etree.ElementTree as ET
     try:
-        root = ET.fromstring(xml_content)
-        # Attempt to find standard VN E-Invoice tags.
-        # This is a robust fallback scanner ignoring deep namespaces for enterprise readiness.
+        root = ET.fromstring(xml_content.strip())
+        
         mst = None
         tong_tien = 0.0
         tien_thue = 0.0
         
         for elem in root.iter():
-            tag = elem.tag.split('}')[-1].lower() # strip namespace
-            if tag in ['mst', 'ma_so_thue', 'buyer_taxcode', 'sellertaxcode'] and not mst:
-                mst = elem.text
-            if tag in ['tgttc', 'tong_tien', 'total_amount'] and elem.text:
-                tong_tien = float(elem.text)
-            if tag in ['tgtgt', 'tien_thue', 'vat_amount'] and elem.text:
-                tien_thue = float(elem.text)
+            # Safely strip namespace like {http://namespace.com}tag
+            tag = elem.tag.split('}')[-1].lower() if '}' in elem.tag else elem.tag.lower()
+            
+            if tag in ['mst', 'ma_so_thue'] and mst is None and elem.text:
+                mst = elem.text.strip()
+            if tag in ['thtien', 'tgttc', 'tong_tien', 'tgtttbso'] and elem.text:
+                try:
+                    tong_tien = float(elem.text)
+                except ValueError:
+                    pass
+            if tag in ['tgtgt', 'tien_thue'] and elem.text:
+                try:
+                    tien_thue = float(elem.text)
+                except ValueError:
+                    pass
                 
         return {
             "mst": mst or "NOT_FOUND",

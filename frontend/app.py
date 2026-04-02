@@ -14,7 +14,6 @@ project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
 from taxlens.agents.agent_router import build_tax_audit_graph
-from taxlens.agents.tools import tool_parse_vn_einvoice_xml
 
 try:
     from langchain_core.messages import HumanMessage
@@ -38,6 +37,7 @@ if "raw_data" not in st.session_state:
         "gl_vat_total": 0.0,
         "tax_return_total": 0.0,
         "einvoice_total": 0.0,
+        "xml_content": "",
         "sample_expense": 500000,
         "has_valid_invoice": False,
         "vendor_loc": "Vietnam",
@@ -58,43 +58,47 @@ with st.sidebar:
     st.subheader("📊 Audit Overview")
     metric_col1, metric_col2 = st.columns(2)
     metric_col1.metric("GL Records", len(st.session_state["uploaded_dataframes"].get("gl", [])))
-    metric_col2.metric("Invoices Processed", "XML" if st.session_state["raw_data"]["einvoice_total"] > 0 else 0)
+    metric_col2.metric("Invoices Set", "Ready" if st.session_state["raw_data"]["xml_content"] else "None")
     
     st.divider()
     st.header("🗂️ Data Ingestion")
     
-    uploaded_files = st.file_uploader(
-        "Upload GL (Excel/CSV) & e-Invoice (XML)", 
-        accept_multiple_files=True
-    )
-    
-    if uploaded_files:
-        for file in uploaded_files:
-            file_name_lower = file.name.lower()
-            try:
-                if file_name_lower.endswith('.csv'):
-                    df = pd.read_csv(file)
-                    st.session_state["uploaded_dataframes"]["gl"] = df
-                    if 'amount' in df.columns or 'so_tien' in df.columns:
-                        total = df.get('amount', df.get('so_tien')).sum()
-                        st.session_state["raw_data"]["gl_vat_total"] = float(total)
-                    st.success(f"Loaded GL: {file.name}")
-                    
-                elif file_name_lower.endswith(('.xlsx', '.xls')):
-                    df = pd.read_excel(file)
-                    st.session_state["uploaded_dataframes"]["gl"] = df
-                    if 'amount' in df.columns or 'so_tien' in df.columns:
-                        total = df.get('amount', df.get('so_tien')).sum()
-                        st.session_state["raw_data"]["gl_vat_total"] = float(total)
-                    st.success(f"Loaded GL: {file.name}")
-                    
-                elif file_name_lower.endswith('.xml'):
-                    xml_content = file.read().decode('utf-8')
-                    parsed = tool_parse_vn_einvoice_xml(xml_content)
-                    st.session_state["raw_data"]["einvoice_total"] = parsed.get("vat_amount", 0.0)
-                    st.success(f"Parsed XML: {file.name} - VND {parsed.get('vat_amount')}")
-            except Exception as e:
-                st.error(f"Error parsing {file.name}: {e}")
+    try:
+        uploaded_files = st.file_uploader(
+            "Upload GL (Excel/CSV) & e-Invoice (XML)", 
+            accept_multiple_files=True
+        )
+        
+        if uploaded_files:
+            for file in uploaded_files:
+                file_name_lower = file.name.lower()
+                try:
+                    if file_name_lower.endswith('.csv'):
+                        df = pd.read_csv(file)
+                        st.session_state["uploaded_dataframes"]["gl"] = df
+                        if 'amount' in df.columns or 'so_tien' in df.columns:
+                            col = 'amount' if 'amount' in df.columns else 'so_tien'
+                            st.session_state["raw_data"]["gl_vat_total"] = float(pd.to_numeric(df[col], errors='coerce').sum())
+                        st.success(f"Nạp thành công GL: {file.name}")
+                        
+                    elif file_name_lower.endswith(('.xlsx', '.xls')):
+                        df = pd.read_excel(file)
+                        st.session_state["uploaded_dataframes"]["gl"] = df
+                        if 'amount' in df.columns or 'so_tien' in df.columns:
+                            col = 'amount' if 'amount' in df.columns else 'so_tien'
+                            st.session_state["raw_data"]["gl_vat_total"] = float(pd.to_numeric(df[col], errors='coerce').sum())
+                        st.success(f"Nạp thành công GL: {file.name}")
+                        
+                    elif file_name_lower.endswith('.xml'):
+                        xml_content = file.read().decode('utf-8')
+                        if not xml_content.strip():
+                            raise ValueError("File XML rỗng.")
+                        st.session_state["raw_data"]["xml_content"] = xml_content
+                        st.success(f"Nạp thành công Hóa đơn XML: {file.name}")
+                except Exception as inner_e:
+                    st.error(f"Lỗi đọc file {file.name}: {str(inner_e)}")
+    except Exception as e:
+        st.error(f"Lỗi hệ thống khi upload: {str(e)}")
 
 # --- MAIN UI TABS ---
 tab_chat, tab_working_papers, tab_data_explorer = st.tabs(["💬 Workspace Chat", "📄 Working Papers", "🔍 Data Explorer"])

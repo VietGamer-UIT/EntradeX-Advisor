@@ -17,7 +17,8 @@ except ImportError:
 from taxlens.agents.tools import (
     tool_reconcile_vat_3_way,
     tool_calculate_cit_adjustment,
-    tool_fct_tp_scanner
+    tool_fct_tp_scanner,
+    tool_parse_vn_einvoice_xml
 )
 
 # 1. State Definition
@@ -52,10 +53,21 @@ def node_vat_recon(state: GraphState) -> Dict[str, Any]:
     # Extract mock data or defaults
     gl = raw.get("gl_vat_total", 1000000)
     tax_return = raw.get("tax_return_total", 1000000)
-    einvoice = raw.get("einvoice_total", 950000)
+    
+    einvoice_total = raw.get("einvoice_total", 950000)
+    xml_content = raw.get("xml_content")
+    xml_parsed = None
+    if xml_content:
+        xml_parsed = tool_parse_vn_einvoice_xml(xml_content)
+        if "vat_amount" in xml_parsed:
+            einvoice_total = float(xml_parsed["vat_amount"])
     
     # Use tool
-    result = tool_reconcile_vat_3_way(gl, tax_return, einvoice)
+    result = tool_reconcile_vat_3_way(gl, tax_return, einvoice_total)
+    
+    if xml_parsed and "error" not in xml_parsed:
+         result["xml_details"] = f"XML MST: {xml_parsed.get('mst')}, Total: {xml_parsed.get('total_amount')}"
+
     papers["VAT_Recon"] = result
     
     msg = AIMessage(content=f"[VAT_Reconciliation_Agent]: Kết quả đối soát VAT 3 bên: {result['status']}. Lệch hóa đơn: {result['return_vs_einvoice_variance']}")

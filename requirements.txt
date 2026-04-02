@@ -15,3 +15,10 @@ llama-index-embeddings-ollama>=0.1.2
 # pymupdf>=1.23.0
 # pytesseract>=0.3.10
 # Pillow>=10.0.0
+
+# Enterprise Multi-Agent & UI
+streamlit>=1.32.0
+langgraph>=0.0.30
+langchain>=0.1.13
+langchain-ollama>=0.0.1
+langchain-community>=0.0.29

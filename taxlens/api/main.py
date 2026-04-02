@@ -96,28 +96,60 @@ class RiskDashboardResponse(BaseModel):
 async def manager_risk_dashboard(
     _: Role = Depends(dep_manager_admin),
 ) -> RiskDashboardResponse:
-    """Manager: materiality-style ranked risks (example uses in-memory demo rows)."""
-    demo_rows = [
-        {
-            "id": "V-1001",
-            "amount": 12_500_000.0,
-            "vat_expected": 1_250_000.0,
-            "vat_actual": 900_000.0,
-            "ledger_amount_match": 0.0,
-            "invoice_duplicate_signal": 0.2,
-        },
-        {
-            "id": "V-1002",
-            "amount": 50_000_000.0,
-            "vat_expected": 0.0,
-            "vat_actual": 0.0,
-            "ledger_amount_match": 1.0,
-            "invoice_duplicate_signal": 0.0,
-        },
-    ]
-    gl_stats = {"amount_mean": 20_000_000.0, "amount_std": 15_000_000.0}
-    scored = score_transactions(demo_rows, gl_stats)
+    """Manager: materiality-style ranked risks (dynamic from uploaded GL or fallback)."""
+    import os
+    import pandas as pd
+    
+    latest_file = None
+    if UPLOAD_DIR.exists():
+        files = [f for f in UPLOAD_DIR.iterdir() if f.is_file() and f.suffix.lower() in ('.csv', '.xlsx', '.xls')]
+        if files:
+            latest_file = max(files, key=os.path.getmtime)
+            
+    rows = []
+    if latest_file:
+        try:
+            df = normalize_gl_columns(load_general_ledger(latest_file))
+            rows = df.to_dict(orient="records")
+        except Exception:
+            pass
+            
+    if not rows:
+        # Fallback to demo
+        rows = [
+            {
+                "id": "V-1001",
+                "amount": 12_500_000.0,
+                "vat_expected": 1_250_000.0,
+                "vat_actual": 900_000.0,
+                "ledger_amount_match": 0.0,
+                "invoice_duplicate_signal": 0.2,
+            },
+            {
+                "id": "V-1002",
+                "amount": 50_000_000.0,
+                "vat_expected": 0.0,
+                "vat_actual": 0.0,
+                "ledger_amount_match": 1.0,
+                "invoice_duplicate_signal": 0.0,
+            },
+        ]
+        
+    df_stats = pd.DataFrame(rows)
+    amt_col = pd.Series([0])
+    if 'amount' in df_stats.columns:
+        amt_col = pd.to_numeric(df_stats['amount'], errors='coerce').fillna(0)
+    elif 'so_tien' in df_stats.columns:
+        amt_col = pd.to_numeric(df_stats['so_tien'], errors='coerce').fillna(0)
+        
+    gl_stats = {
+        "amount_mean": float(amt_col.mean()) if not amt_col.empty else 20_000_000.0,
+        "amount_std": float(amt_col.std()) if len(amt_col) > 1 else 15_000_000.0
+    }
+    
+    scored = score_transactions(rows, gl_stats)
     top = top_risk_percentile(scored)
+    
     return RiskDashboardResponse(
         total_scored=len(scored),
         top_risk_count=len(top),

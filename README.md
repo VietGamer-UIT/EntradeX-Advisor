@@ -1,62 +1,58 @@
 <div align="center">
-  <h1>⚖️ TaxLens-AI</h1>
-  <h3>Enterprise Autonomous Tax Brain – 100% Local, 0% Data Leak</h3>
+  <h1>⚖️ TaxLens-AI: Open-Core Edition</h1>
+  <h3>The Ultimate 3-Headed Enterprise AI Auditor</h3>
   <p>
     <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python">
     <img src="https://img.shields.io/badge/Streamlit-1.32+-red.svg" alt="Streamlit">
     <img src="https://img.shields.io/badge/LangGraph-0.0.30-orange.svg" alt="LangGraph">
-    <img src="https://img.shields.io/badge/Ollama-Llama3.1-black.svg" alt="Ollama">
+    <img src="https://img.shields.io/badge/Open--Core-Startup-purple.svg" alt="OpenCore">
   </p>
 </div>
 
 ---
 
-**TaxLens-AI** marks its **Commit 100 Milestone** by evolving into a flawless Big 4-standard agentic workspace. It leverages LangGraph to orchestrate a team of local AI audit agents that actively scan Vietnamese General Ledgers and E-Invoices, grounded perfectly in current tax laws without ever sending a single byte to the internet.
+**TaxLens-AI** marks its definitive pivot into an **Enterprise Open-Core Product**, engineered specifically for international Big 4 audit firms (e.g., Forvis Mazars). We have aggressively decoupled operations into a unified Role-Based Access Control (RBAC) architecture orchestrated by a 3-Headed LangGraph Agent system.
 
-## 🏗️ System Architecture & Execution Flow
+## 🚀 The 3 Pillars of Power (Core Features)
+
+1. **🛡️ Thợ Săn Lỗi (Hunter Agent - Junior Level)**
+   - **Mục Định:** Đóng vai trò Data Cruncher.
+   - **Sức Mạnh:** Tiêu thụ hàng loạt file báo cáo khổng lồ (Sổ cái, Trial Balance, XML Invoices). Áp dụng thuật toán đối chiếu siêu tốc (VAT, CIT, FCT/Transfer Pricing) mà không sập hệ thống.
+2. **🧠 Từ Điển Sống (Oracle Agent - Senior Level)**
+   - **Mục Định:** Khám phá Luật Thuế Real-time.
+   - **Sức Mạnh:** Xóa bỏ khái niệm Vector Database tốn dung lượng ổ đĩa. Sử dụng **Stealth RAG Cổng Thông Tin Chính Phủ VN**. Nó bẻ gãy Cloudflare 403 bằng `fake-useragent` và retry thông minh để đem về các phân tích từ LLM sống trên Ram.
+3. **✒️ Máy In Báo Cáo (Report Agent - Manager Level)**
+   - **Mục Định:** Khâu ấn định dòng tiền và danh dự pháp lý của Big 4.
+   - **Sức Mạnh:** Dựa vào nút bấm duy nhất của Manager (PHÊ DUYỆT), tự động sinh chuỗi **Management Letter** đẹp tiêu chuẩn, gãy gọn mọi rủi ro với phong cách văn bản pháp lý cứng cáp.
+
+## 🏗️ 3-Headed RBAC Architecture
 
 ```mermaid
 graph TD
-    A[📁 Upload GL & XML Invoice] -->|pandas & ET| B(Streamlit UI / Data State)
-    B --> C{LangGraph Supervisor}
-    C -->|TB Mapping| D[Junior Agent]
-    C -->|3-Way Matching| E[VAT Senior Agent]
-    C -->|Deductibility| F[CIT Senior Agent]
-    C -->|Transfer Pricing| G[FCT/TP Agent]
-    C -->|Dynamic RAG| H[Compliance Agent]
-    D & E & F & G & H --> I((🛡️ Strict HITL: Manager Review))
-    I -->|❌ Rejected| J[Halt & Feedback]
-    I -->|✅ Approved| K[Management Letter Agent]
-    K --> L[📄 Final Audit Draft]
+    A([🔐 Login Select Role]) --> B{Streamlit User RBAC}
+    
+    B -->|Junior| C[File Uploader Drag/Drop]
+    B -->|Senior| D[Chatbot Oracle RAG]
+    B -->|Manager| E[Command Center Dashboard]
+    
+    C -->|Trigger| F(Hunter Agent)
+    D -->|Chat Query| G(Oracle Agent)
+    E -->|Click Approve| H(Report Agent)
+    
+    F --> I[(Working Papers State)]
+    G --> I
+    I --> H
+    H --> J[📄 Markdown Management Letter]
 ```
 
-## 🌟 Masterpiece Features
-- **Strict Human-In-The-Loop (HITL):** LangGraph utilizes `interrupt_before=["Manager_Review_Node"]` to completely pause the AI orchestration thread. Data cannot proceed to reporting without explicit human approval.
-- **Dynamic Vietnamese Law RAG:** Say goodbye to hallucination. Powered by LlamaIndex, the Compliance Agent forces explicit citations (`Theo [Văn bản] - Điều [X]`) or defaults to `Insufficient legal basis`.
-- **Fault-Tolerant XML Parser:** A deeply robust XML scanner strips chaotic Vietnamese E-Invoice namespaces on the fly to seamlessly pull `<MST>`, `<ThTien>`, and `<TGTGT>`.
-- **Crash-Proof Enterprise State:** Multi-tab Streamlit dashboard (`st.tabs`) combined with robust backend memory check-pointing prevents state loss even if the user refreshes mid-review.
+## ⚡ Quick Start
 
-## 🚀 Quickstart (Zero-Setup)
-
-**1. Install & Setup Environment**
 ```bash
-python -m venv .venv
-# Activate venv: source .venv/bin/activate (mac/linux) OR .venv\Scripts\activate (windows)
+# Cài đặt siêu tân binh
 pip install -r requirements.txt
-```
 
-**2. Start Local Intelligence (Ollama)**
-```bash
-# Ensure Ollama is installed locally
-ollama pull llama3.1
-ollama pull nomic-embed-text
-```
-
-**3. Launch the Enterprise Workspace**
-```bash
+# Khởi động RBAC UI (nhớ điền API Key vào Sidebar)
 streamlit run frontend/app.py
 ```
-> Wait for the UI to load, drop your `CSV/XLSX` Ledgers and `XML` Invoices on the left panel, and command the Agent to begin the audit!
 
----
-*Developed by Antigravity as the Ultimate Tax AI Reference Standard.*
+*Built by Antigravity as the Ultimate Startup Tax Blueprint.*

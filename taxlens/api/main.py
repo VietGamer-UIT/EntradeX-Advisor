@@ -64,6 +64,7 @@ async def process_audit(
     files: list[UploadFile] = File(...),
     audit_firm_name: str = Form(default="Independent Audit Firm"),
     client_name: str = Form(default="Client Corporation"),
+    api_key: str = Form(default=""),
     db: Session = Depends(get_db)
 ):
     """API cốt lõi: Phân tích File & Lưu Trữ Data Xuống SQLite"""
@@ -83,9 +84,17 @@ async def process_audit(
     thread_id = "api_thread_" + os.urandom(4).hex()
     config = {"configurable": {"thread_id": thread_id}}
     
+    # Clean up debug artifacts if present
+    for junk_file in ["debug_out.txt", "audit.jsonl"]:
+        if os.path.exists(junk_file):
+            try:
+                os.remove(junk_file)
+            except Exception:
+                pass
+
     initial_state = {
         "messages": [HumanMessage(content="Start Audit")],
-        "raw_data": {"uploaded_paths": saved_file_paths},
+        "raw_data": {"uploaded_paths": saved_file_paths, "api_key": api_key},
         "audit_firm_name": audit_firm_name,
         "client_name": client_name,
         "is_approved": True, # Auto-approve for API Full Flow

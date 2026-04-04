@@ -61,24 +61,34 @@ def node_hunter_agent(state: GraphState) -> Dict[str, Any]:
                     # 1. Quét CLASS_2_FAKE_INVOICE (Hóa đơn không qua TCTN chuẩn)
                     df_fake_tctn = df[~df['NhaCungCap_HDDT'].isin(VALID_TCTN)]
                     for _, row in df_fake_tctn.iterrows():
+                        ngay_gd = row.get('NgayGiaoDich', row.get('Transaction_Date', 'N/A'))
                         findings.append({
                             "Class_Risk": "CLASS_2_FAKE_INVOICE",
                             "Mã rủi ro": f"FAKE_TCTN_{row.get('Transaction_ID', 'ID')}",
-                            "Khoản mục": f"Hóa đơn từ App lậu ({row['NhaCungCap_HDDT']})",
-                            "Số tiền chênh lệch": f"Nghi vấn rủi ro toàn bộ Tờ hóa đơn {row['SoTien']:,.0f} VND",
-                            "Cơ sở pháp lý": "Lỗi phần mềm truyền nhận - NĐ 123/2020",
-                            "Đề xuất": "Từ chối thanh toán, gửi công văn cho CQT xác minh"
+                            "Ngày Giao Dịch": str(ngay_gd),
+                            "Tên Công Ty/App": str(row.get('NhaCungCap_HDDT', 'Unknown')),
+                            "Số Tiền Gốc": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Số Tiền Lệch": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Khoản mục": f"Hóa đơn {row.get('SoTien', 0):,.0f} VND từ App lậu {row.get('NhaCungCap_HDDT', 'Unknown')} ngày {ngay_gd}",
+                            "Số tiền chênh lệch": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Cơ sở pháp lý": "NĐ 123/2020/NĐ-CP - Hóa đơn bất hợp pháp",
+                            "Đề xuất": "Từ chối thanh toán, báo cáo rủi ro phạt hành chính và trốn thuế."
                         })
                     
                     # 2. Quét CLASS_3_CIT_REJECT (Chi phí lớn k chứng từ)
                     df_cit_reject = df[(df['TaiKhoan'].str.startswith('642')) & (df['SoTien'] > 20000000) & (df['ChungTuHopLe'] == 'FALSE')]
                     for _, row in df_cit_reject.iterrows():
+                        ngay_gd = row.get('NgayGiaoDich', row.get('Transaction_Date', 'N/A'))
                         findings.append({
                             "Class_Risk": "CLASS_3_CIT_REJECT",
                             "Mã rủi ro": f"CIT_LOSS_{row.get('Transaction_ID', 'ID')}",
-                            "Khoản mục": "Chi phí Quản lý thiếu Invoice",
-                            "Số tiền chênh lệch": f"{row['SoTien']:,.0f} VND",
-                            "Cơ sở pháp lý": "VBHN 66/VBHN-BTC (Sửa đổi TT 78)",
+                            "Ngày Giao Dịch": str(ngay_gd),
+                            "Tên Công Ty/App": str(row.get('NhaCungCap_HDDT', 'Unknown')),
+                            "Số Tiền Gốc": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Số Tiền Lệch": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Khoản mục": f"Chi phí {row.get('TaiKhoan', 'N/A')} số tiền {row.get('SoTien', 0):,.0f} VND thiếu Invoice ngày {ngay_gd}",
+                            "Số tiền chênh lệch": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Cơ sở pháp lý": "VBHN 66/VBHN-BTC (Sửa đổi TT 78) - Chi phí không được trừ",
                             "Đề xuất": "Bóc ngay khỏi chi phí hợp lý để tính TNDN"
                         })
                         
@@ -86,12 +96,18 @@ def node_hunter_agent(state: GraphState) -> Dict[str, Any]:
                     # Giả định hàng hóa phổ thông là 10%, nếu độ lệch tiền thuế lớn hơn 100k so với 10% -> Cảnh báo
                     df_vat_leak = df[(abs(df['TienThue'] - (df['SoTien'] * 0.1)) > 100000) & (df['TienThue'] > 0)]
                     for _, row in df_vat_leak.iterrows():
+                        ngay_gd = row.get('NgayGiaoDich', row.get('Transaction_Date', 'N/A'))
+                        lech_vat = abs(row['TienThue'] - (row['SoTien'] * 0.1)) if not pd.isna(row.get('TienThue')) and not pd.isna(row.get('SoTien')) else 0
                         findings.append({
                             "Class_Risk": "CLASS_1_VAT_LEAK",
                             "Mã rủi ro": f"VAT_LEAK_{row.get('Transaction_ID', 'ID')}",
-                            "Khoản mục": "VAT Đầu vào/Đầu ra tính sai",
-                            "Số tiền chênh lệch": f"Lệch VAT nội bộ",
-                            "Cơ sở pháp lý": "TT 219/2013/TT-BTC",
+                            "Ngày Giao Dịch": str(ngay_gd),
+                            "Tên Công Ty/App": str(row.get('NhaCungCap_HDDT', 'Unknown')),
+                            "Số Tiền Gốc": f"{row.get('SoTien', 0):,.0f} VND",
+                            "Số Tiền Lệch": f"{lech_vat:,.0f} VND",
+                            "Khoản mục": f"Lệch VAT {lech_vat:,.0f} VND của {row.get('NhaCungCap_HDDT', 'Unknown')} ngày {ngay_gd}",
+                            "Số tiền chênh lệch": f"{lech_vat:,.0f} VND",
+                            "Cơ sở pháp lý": "TT 219/2013/TT-BTC - Kê khai sai thuế GTGT",
                             "Đề xuất": "Ghi nhận âm tờ khai hoặc làm phụ lục điều chỉnh"
                         })
                         
@@ -109,50 +125,55 @@ def node_oracle_agent(state: GraphState) -> Dict[str, Any]:
     papers = state.get("working_papers", {})
     review_note = state.get("review_note", "")
     
-    question = "Kiểm tra cơ sở pháp lý và xác nhận rủi ro hóa đơn TCTN, hóa đơn TNDN trên 20tr và lệch VAT"
-    if review_note: question = f"Special Request từ Trưởng nhóm: {review_note}"
+    findings = papers.get("standardized_findings", [])
+    findings_str = "\n".join([f"- {f['Mã rủi ro']}: {f['Khoản mục']} - Lệch: {f['Số Tiền Lệch']}" for f in findings[:20]])
+    question = f"Từ danh sách lỗi sau, hãy viết Management Letter phân tích rủi ro hình sự, phạt hành chính nếu không nộp thuế đúng hạn:\n{findings_str}"
+    if review_note: question = f"Special Request từ Trưởng nhóm: {review_note}\n\n{question}"
     
     sys_prompt = """Bạn là Trưởng Phòng Pháp Chế Thuế của một hãng Big 4 tại Việt Nam.
 NGHIÊM CẤM ẢO GIÁC LUẬT (NO HALLUCINATIONS). Bắt buộc phải trích dẫn theo khung luật hiện hành:
 1. Hóa đơn điện tử & TCTN: Phải viện dẫn Nghị định 123/2020/NĐ-CP và Thông tư 78/2021/TT-BTC.
 2. Quản lý Thuế: Phải trích dẫn Luật số 38/2019/QH14 và Thông tư 80/2021/TT-BTC.
 3. Thuế TNDN: Không được dùng TT 78/2014 độc lập, BẮT BUỘC dùng Văn bản hợp nhất số 66/VBHN-BTC (đã gộp các sửa đổi).
-Ghi rõ ràng, mạch lạc, có tính quyết đoán."""
+Ghi rõ ràng, mạch lạc, có tính quyết đoán. Trả về bài phân tích hoàn chỉnh."""
 
+    analysis = "Trống."
     try:
          web_data = tool_live_vietnam_tax_search.invoke({"query": question})
          content = web_data.get("content", "")
          
          import os
-         api_key = os.environ.get("GOOGLE_API_KEY", "")
+         api_key = state.get("raw_data", {}).get("api_key") or os.environ.get("GOOGLE_API_KEY", "")
          if not api_key:
-             raise ValueError("MISSING GOOGLE_API_KEY: Vui lòng gắn biến môi trường hoặc file .env")
+             raise ValueError("MISSING GOOGLE_API_KEY: Vui lòng nhập API Key trong Settings hoặc cấu hình biến môi trường.")
              
          from langchain_google_genai import ChatGoogleGenerativeAI
          from langchain_core.messages import SystemMessage, HumanMessage
+         import os
+         os.environ["GOOGLE_API_KEY"] = api_key # Explicitly set for genai components
          
          try:
-             # Bất tử hóa gọi API
-             llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, max_retries=2)
-             prompt = f"Phân tích Luật thực tế Web RAG: {content[:3000]}\n\nYêu cầu phân tích: {question}"
+             # BẮT BUỘC dùng gemini-1.5-flash-latest
+             llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0.2, max_retries=2)
+             prompt = f"Tham khảo thông tin RAG từ Web: {content[:3000]}\n\nYêu cầu phân tích: {question}"
              ans = llm.invoke([SystemMessage(content=sys_prompt), HumanMessage(content=prompt)]).content
-             analysis = f"🌍 Nguồn tham vấn: {web_data.get('url', 'Internal')}\n\n{ans}"
+             analysis = f"🌍 Nguồn pháp lý & Phân tích chuyên sâu (Model: gemini-1.5-flash-latest):\n\n{ans}"
          except Exception as api_err:
              err_str = str(api_err).lower()
              if "404" in err_str or "not found" in err_str:
-                 analysis = "⚠️ LỖI GEMINI: Model 'gemini-1.5-pro-latest' bị báo 404 NOT FOUND. Vui lòng chuyển sang 'gemini-1.5-flash' tại backend hoặc cập nhật version langchain-google-genai."
-             elif "403" in err_str or "permission" in err_str:
-                 analysis = "⚠️ LỖI GEMINI 403: API Key không hợp lệ hoặc bị chặn ở Quốc gia của bạn."
+                 analysis = "⚠️ LỖI GEMINI: Model name không hợp lệ."
+             elif "403" in err_str or "permission" in err_str or "api_key" in err_str:
+                 analysis = "⚠️ LỖI GEMINI 403: API Key không hợp lệ."
              elif "429" in err_str or "quota" in err_str:
-                 analysis = "⚠️ LỖI GEMINI 429: Hết hạn mức Rate Limit API (Too Many Requests)."
+                 analysis = "⚠️ LỖI GEMINI 429: Hết hạn mức Rate Limit API."
              else:
-                 analysis = f"⚠️ LỖI GEMINI KHÔNG XÁC ĐỊNH: {api_err}"
+                 analysis = f"⚠️ LỖI GEMINI: {api_err}"
                  
     except Exception as e:
          analysis = f"Oracle Fatal SYS ERR: {e}"
          
     papers["Legal_Context"] = analysis
-    return {"messages": [AIMessage(content="Oracle Legal Base Applied.")], "working_papers": papers}
+    return {"messages": [AIMessage(content=analysis)], "working_papers": papers}
 
 def node_manager_review(state: GraphState) -> Dict[str, Any]:
     return {"messages": [AIMessage(content="HitL Paused")]}

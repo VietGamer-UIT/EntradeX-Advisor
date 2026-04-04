@@ -6,6 +6,7 @@
     <title>TaxLens Enterprise SaaS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
@@ -25,10 +26,12 @@
             <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-lg font-medium transition"><i class="fas fa-chart-pie"></i> Dashboard</a>
             <a href="#" onclick="switchTab('audit')" id="nav-audit" class="nav-btn flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg font-medium transition"><i class="fas fa-search-dollar"></i> New Audit</a>
             <a href="#" onclick="switchTab('history')" id="nav-history" class="nav-btn flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg font-medium transition"><i class="fas fa-folder-open"></i> Report History</a>
-            <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg font-medium transition"><i class="fas fa-cog"></i> Settings</a>
+            <a href="#" onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg font-medium transition"><i class="fas fa-cog"></i> Settings</a>
         </nav>
-        <div class="p-4 border-t border-gray-700">
-            <p class="text-xs text-gray-500 text-center">v2.0 (Gemini Engine)</p>
+        <div class="p-4 border-t border-gray-700 text-center">
+            <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Phát triển bởi</p>
+            <p class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mt-1">Đoàn Hoàng Việt</p>
+            <p class="text-xs text-gray-500">(Việt Gamer)</p>
         </div>
     </aside>
 
@@ -67,8 +70,28 @@
                         <h4 class="text-3xl font-bold text-white mt-2" id="db-safe-records">--</h4>
                     </div>
                 </div>
-                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-                    <h4 class="text-lg font-bold mb-4">Quick Actions</h4>
+                
+                <!-- Biểu đồ -->
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h4 class="text-lg font-bold mb-4 text-gray-300">Tỷ lệ các loại Rủi ro</h4>
+                        <div class="relative h-64 w-full">
+                            <canvas id="riskPieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h4 class="text-lg font-bold mb-4 text-gray-300">Biến động Số tiền theo loại lỗi</h4>
+                        <div class="relative h-64 w-full">
+                            <canvas id="riskBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg flex justify-between items-center">
+                    <div>
+                        <h4 class="text-lg font-bold mb-1">Quick Actions</h4>
+                        <p class="text-gray-400 text-sm">Chạy báo cáo kiểm toán mới từ file CSV/XML</p>
+                    </div>
                     <button onclick="switchTab('audit')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition shadow-md">Run New Data Pipeline</button>
                 </div>
             </section>
@@ -119,15 +142,15 @@
                 
                 <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
                     <div class="p-4 bg-gray-900/50 border-b border-gray-700"><h4 class="font-bold text-red-400">Working Papers (Data DB)</h4></div>
-                    <div class="overflow-y-auto max-h-96">
+                    <div class="overflow-x-auto overflow-y-auto" style="max-height: 600px;">
                         <table class="w-full text-left text-sm text-gray-300">
                             <thead class="text-xs uppercase bg-gray-900 text-gray-400 sticky top-0">
                                 <tr>
-                                    <th class="px-4 py-3">Risk Class</th>
-                                    <th class="px-4 py-3">Mã Lỗi</th>
-                                    <th class="px-4 py-3">Khoản Mục</th>
-                                    <th class="px-4 py-3">Chênh Lệch</th>
-                                    <th class="px-4 py-3">Đề Xuất</th>
+                                    <th class="px-6 py-3 whitespace-nowrap">Risk Class</th>
+                                    <th class="px-6 py-3 whitespace-nowrap">Mã Lỗi</th>
+                                    <th class="px-6 py-3">Khoản Mục</th>
+                                    <th class="px-6 py-3 whitespace-nowrap">Chênh Lệch</th>
+                                    <th class="px-6 py-3 min-w-[250px]">Đề Xuất</th>
                                 </tr>
                             </thead>
                             <tbody id="riskTable" class="divide-y divide-gray-700"></tbody>
@@ -138,6 +161,21 @@
                 <div class="bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700 prose prose-invert max-w-none">
                     <h4 class="text-blue-400 font-bold border-b border-gray-700 pb-2 mb-4">Management Letter</h4>
                     <div id="markdownReport"></div>
+                </div>
+            </section>
+
+            <!-- SECTION: Settings -->
+            <section id="page-settings" class="hidden animate-fade-in max-w-2xl mx-auto">
+                <div class="bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-6 text-blue-400 border-b border-gray-700 pb-4">System Settings</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-300 mb-2">Google Gemini API Key</label>
+                            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none focus:border-blue-500 transition">
+                            <p class="text-xs text-gray-500 mt-2">Được lưu trực tiếp trong trình duyệt bằng localStorage, không gửi lên server trừ khi chạy Audit Pipeline.</p>
+                        </div>
+                        <button onclick="saveSettings()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium transition shadow-md">Lưu Cấu Hình</button>
+                    </div>
                 </div>
             </section>
 
@@ -170,8 +208,20 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     <script>
-        const pages = ['dashboard', 'audit', 'results', 'history'];
+        const pages = ['dashboard', 'audit', 'results', 'history', 'settings'];
         let cachedHistory = [];
+        let riskPieChartInstance = null;
+        let riskBarChartInstance = null;
+
+        // Settings Init
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+        });
+
+        function saveSettings() {
+            localStorage.setItem('gemini_api_key', document.getElementById('apiKeyInput').value.trim());
+            alert('Lưu cài đặt thành công!');
+        }
 
         function switchTab(tabId) {
             pages.forEach(p => { document.getElementById(`page-${p}`).classList.add('hidden'); });
@@ -179,14 +229,16 @@
                 btn.className = "nav-btn flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg font-medium transition";
             });
             
-            if(['dashboard', 'audit', 'history'].includes(tabId)){
+            if(['dashboard', 'audit', 'history', 'settings'].includes(tabId)){
                 let activeBtn = document.getElementById(`nav-${tabId}`);
-                activeBtn.className = "nav-btn flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-lg font-medium transition";
+                if (activeBtn) {
+                    activeBtn.className = "nav-btn flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-lg font-medium transition";
+                }
             }
 
             document.getElementById(`page-${tabId}`).classList.remove('hidden');
             
-            const titles = { 'dashboard': 'Executive Dashboard', 'audit': 'New Audit Pipeline', 'history': 'Database Records', 'results': 'Audit Output' };
+            const titles = { 'dashboard': 'Executive Dashboard', 'audit': 'New Audit Pipeline', 'history': 'Database Records', 'results': 'Audit Output', 'settings': 'System Settings' };
             document.getElementById('top-title').innerText = titles[tabId];
 
             if(tabId === 'history' || tabId === 'dashboard') loadHistory();
@@ -211,17 +263,76 @@
 
         function calculateDashboardMetrics() {
             document.getElementById('db-total-audits').innerText = cachedHistory.length;
-            let vatErrors = 0, citErrors = 0, safeRecords = 0;
+            let vatErrors = 0, citErrors = 0, fakeInvoice = 0, safeRecords = 0;
+            let vatMoney = 0, citMoney = 0, fakeMoney = 0;
+            
             cachedHistory.forEach(r => {
                 r.working_papers.forEach(w => {
-                    if(w.Class_Risk === 'CLASS_1_VAT_LEAK') vatErrors++;
-                    else if(w.Class_Risk === 'CLASS_3_CIT_REJECT' || w.Class_Risk === 'CLASS_2_FAKE_INVOICE') citErrors++;
-                    else if(w.Class_Risk === 'CLASS_0_SAFE' || w.Class_Risk === 'N/A') safeRecords++;
+                    const ch_lech = parseFloat((w['Số tiền chênh lệch']||"0").replace(/[^0-9.-]+/g,"")) || 0;
+                    
+                    if(w.Class_Risk === 'CLASS_1_VAT_LEAK') { vatErrors++; vatMoney += ch_lech; }
+                    else if(w.Class_Risk === 'CLASS_3_CIT_REJECT') { citErrors++; citMoney += ch_lech; }
+                    else if(w.Class_Risk === 'CLASS_2_FAKE_INVOICE') { fakeInvoice++; fakeMoney += ch_lech; }
+                    else if(w.Class_Risk === 'CLASS_0_SAFE' || w.Class_Risk === 'N/A') { safeRecords++; }
                 });
             });
+            
             document.getElementById('db-vat-errors').innerText = vatErrors;
-            document.getElementById('db-cit-errors').innerText = citErrors;
+            document.getElementById('db-cit-errors').innerText = citErrors + fakeInvoice;
             document.getElementById('db-safe-records').innerText = safeRecords || (cachedHistory.length > 0 ? "100+" : 0);
+            
+            // Render Charts
+            renderCharts(
+                [vatErrors, citErrors, fakeInvoice],
+                [vatMoney, citMoney, fakeMoney]
+            );
+        }
+
+        function renderCharts(counts, moneys) {
+            const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e5e7eb' } } } };
+            
+            if(riskPieChartInstance) riskPieChartInstance.destroy();
+            if(riskBarChartInstance) riskBarChartInstance.destroy();
+
+            const ctxPie = document.getElementById('riskPieChart');
+            if (ctxPie) {
+                riskPieChartInstance = new Chart(ctxPie.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['VAT Leak', 'CIT Reject', 'Fake Invoice'],
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: ['#ef4444', '#f59e0b', '#f97316'],
+                            borderColor: '#1f2937',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: commonOptions
+                });
+            }
+
+            const ctxBar = document.getElementById('riskBarChart');
+            if (ctxBar) {
+                riskBarChartInstance = new Chart(ctxBar.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['VAT Leak', 'CIT Reject', 'Fake Invoice'],
+                        datasets: [{
+                            label: 'Số tiền rủi ro (VND)',
+                            data: moneys,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                            x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
+                        }
+                    }
+                });
+            }
         }
 
         function renderHistory() {
@@ -288,6 +399,7 @@
             const fd = new FormData();
             fd.append('audit_firm_name', firmName);
             fd.append('client_name', clientName);
+            fd.append('api_key', localStorage.getItem('gemini_api_key') || '');
             for(let i=0; i<uploadedFiles.length; i++) fd.append('files', uploadedFiles[i]);
 
             try {
@@ -320,11 +432,11 @@
             let tHtml = "";
             wp.forEach(i => {
                 tHtml += `<tr class="hover:bg-gray-700 transition">
-                    <td class="px-4 py-3">${getBadge(i.Class_Risk)}</td>
-                    <td class="px-4 py-3 text-red-400 font-bold">${i['Mã rủi ro']}</td>
-                    <td class="px-4 py-3 truncate max-w-[200px]">${i['Khoản mục']}</td>
-                    <td class="px-4 py-3 font-mono text-yellow-300">${i['Số tiền chênh lệch']}</td>
-                    <td class="px-4 py-3 text-green-400 font-medium">${i['Đề xuất']}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${getBadge(i.Class_Risk)}</td>
+                    <td class="px-6 py-4 text-red-400 font-bold whitespace-nowrap">${i['Mã rủi ro']}</td>
+                    <td class="px-6 py-4 leading-relaxed">${i['Khoản mục']}</td>
+                    <td class="px-6 py-4 font-mono text-yellow-300 whitespace-nowrap">${i['Số tiền chênh lệch']}</td>
+                    <td class="px-6 py-4 text-green-400 font-medium leading-relaxed">${i['Đề xuất']}</td>
                 </tr>`;
             });
             document.getElementById('riskTable').innerHTML = tHtml || '<tr><td colspan="5" class="p-4 text-center">No anomalies found.</td></tr>';

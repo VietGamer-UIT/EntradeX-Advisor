@@ -62,8 +62,8 @@ def get_reports(db: Session = Depends(get_db)):
 @app.post("/api/v1/audit")
 async def process_audit(
     files: list[UploadFile] = File(...),
-    audit_firm_name: str = Form("Forvis Mazars"),
-    client_name: str = Form("Vinamilk"),
+    audit_firm_name: str = Form("Example Audit Firm"),
+    client_name: str = Form("Client ABC Corporation"),
     db: Session = Depends(get_db)
 ):
     """API cốt lõi: Phân tích File & Lưu Trữ Data Xuống SQLite"""

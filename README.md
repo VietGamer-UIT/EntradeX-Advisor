@@ -10,7 +10,7 @@
 
 ---
 
-**TaxLens-AI** đã lột xác hoàn toàn thành một nền tảng **Enterprise B2B SaaS** sẵn sàng phục vụ cấp độ Production cho các hãng Kiểm toán Độc lập (như Forvis Mazars). Phá vỡ giới hạn truyền thống, nền tảng sử dụng kiến trúc Single Page Application (SPA), tích hợp Database truy xuất lịch sử, cùng năng lực xử lý hàng ngàn dòng Pandas song song cùng Google Gemini 1.5 Pro.
+**TaxLens-AI** đã lột xác hoàn toàn thành một nền tảng **Enterprise B2B SaaS** sẵn sàng phục vụ cấp độ Production cho các hãng Kiểm toán Độc lập. Phá vỡ giới hạn truyền thống, nền tảng sử dụng kiến trúc Single Page Application (SPA), tích hợp Database truy xuất lịch sử, cùng năng lực xử lý hàng ngàn dòng Pandas song song cùng Google Gemini 1.5 Pro.
 
 ## 🚀 Tính năng Cốt lõi
 - **Kiến trúc Database-Driven:** SQLAlchemy + SQLite. Lưu toàn bộ JSON Working Papers và Management Letter vĩnh viễn.

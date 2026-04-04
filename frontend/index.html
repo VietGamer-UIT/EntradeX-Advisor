@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxLens Enterprise (Gemini API Core)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { gray: { 900: '#111827', 800: '#1F2937' } } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8 font-sans transition-all duration-300">
+    
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-10 text-center border-b border-gray-700 pb-6">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">🏢 TaxLens-AI: Enterprise Audit</h1>
+            <p class="text-gray-400 mt-2">100% Serverless Cloud Integration via Google Gemini Flash</p>
+        </header>
+
+        <!-- Main Form -->
+        <div class="bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700">
+            <form id="auditForm" class="space-y-6">
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-300">Tên Hãng Kiểm Toán (Tenant)</label>
+                        <input type="text" id="firmName" value="Forvis Mazars" class="mt-2 w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-300">Tên Khách Hàng</label>
+                        <input type="text" id="clientName" value="Vinamilk" class="mt-2 w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none focus:border-blue-500 transition">
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Area -->
+                <div id="dropzone" class="border-2 border-dashed border-gray-600 rounded-xl p-10 text-center hover:border-blue-500 transition bg-gray-900/50 cursor-pointer">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p class="mt-4 text-gray-300">Kéo thả XML/CSV hoặc click để chọn file mẫu</p>
+                    <input type="file" id="fileInput" multiple class="hidden">
+                    <p id="fileCount" class="text-sm text-blue-400 font-bold mt-2"></p>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-lg shadow-lg flex justify-center items-center gap-2 transform active:scale-95 transition">
+                    <span>🚀 BẮT ĐẦU KIỂM TOÁN (EXECUTE AI GRAPH)</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading View -->
+        <div id="loader" class="hidden mt-10 text-center animate-pulse">
+            <div class="inline-block w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-blue-400 text-lg mt-4 font-semibold tracking-wide">🧠 Gemini Engine đang phân tích 100+ chứng từ & RAG Lookup...</p>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results" class="hidden mt-10 space-y-8 animate-fade-in-up">
+            <!-- Working Papers Table -->
+            <div class="bg-gray-800 rounded-xl p-6 shadow-2xl border border-gray-700">
+                <h2 class="text-2xl font-bold text-red-400 flex items-center mb-4">⚠️ Working Papers (Các Rủi Ro Phát Hiện)</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="text-xs uppercase bg-gray-900 border-b border-gray-700 text-gray-400">
+                            <tr>
+                                <th class="px-4 py-3 text-red-500">Mã Lỗi</th>
+                                <th class="px-4 py-3">Khoản Mục</th>
+                                <th class="px-4 py-3 text-yellow-500">Chênh Lệch</th>
+                                <th class="px-4 py-3">Cơ Sở Pháp Lý</th>
+                                <th class="px-4 py-3 text-green-400">Đề Xuất AI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskTable" class="divide-y divide-gray-700">
+                            <!-- JS Injects Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Management Letter Markdown -->
+            <div class="bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700 prose prose-invert max-w-none">
+                <h2 class="text-2xl font-bold text-blue-400 border-b border-gray-700 pb-2 mb-4">📄 Management Letter (Draft)</h2>
+                <div id="markdownReport"></div>
+            </div>
+        </div>
+
+        <!-- Copyright Footer -->
+        <footer class="mt-16 pb-8 text-center text-sm text-gray-500">
+            Powered by TaxLens-AI Engine. Core architecture created by <b>Đoàn Hoàng Việt (Việt Gamer)</b>.
+        </footer>
+    </div>
+
+    <!-- Scripting -->
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileCount = document.getElementById('fileCount');
+        const form = document.getElementById('auditForm');
+        
+        let uploadedFiles = [];
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            uploadedFiles = e.target.files;
+            fileCount.innerText = `Đã chọn ${uploadedFiles.length} files.`;
+        });
+
+        // Dummy drag and drop events
+        dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("border-blue-500"); });
+        dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); dropzone.classList.remove("border-blue-500"); });
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("border-blue-500");
+            uploadedFiles = e.dataTransfer.files;
+            fileCount.innerText = `Kéo thả thành công ${uploadedFiles.length} files.`;
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(uploadedFiles.length === 0) {
+                alert("Sếp Vui lòng chọn ít nhất 1 file Mock nhé!");
+                return;
+            }
+
+            // UI Transitions
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('loader').classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('audit_firm_name', document.getElementById('firmName').value);
+            formData.append('client_name', document.getElementById('clientName').value);
+            for (let i = 0; i < uploadedFiles.length; i++) {
+                formData.append('files', uploadedFiles[i]);
+            }
+
+            try {
+                const response = await fetch('/api/v1/audit', {
+                    method: 'POST',
+                    body: formData
+                });
+                const responseData = await response.json();
+                
+                if(responseData.status === "success"){
+                    renderResults(responseData.data);
+                } else {
+                    alert("Lỗi Backend: " + responseData.message);
+                }
+            } catch (err) {
+                alert("Lỗi kết nối tới FastAPI Backend.");
+            } finally {
+                document.getElementById('loader').classList.add('hidden');
+            }
+        });
+
+        function renderResults(data) {
+            document.getElementById('results').classList.remove('hidden');
+            // Table
+            let tableHTML = "";
+            data.working_papers.forEach(item => {
+                tableHTML += `<tr class="hover:bg-gray-700 transition">
+                    <td class="px-4 py-4 font-bold text-red-500">${item['Mã rủi ro']}</td>
+                    <td class="px-4 py-4 font-medium">${item['Khoản mục']}</td>
+                    <td class="px-4 py-4 text-yellow-400 font-mono">${item['Số tiền chênh lệch']}</td>
+                    <td class="px-4 py-4 italic text-gray-400">${item['Cơ sở pháp lý']}</td>
+                    <td class="px-4 py-4 text-green-300 font-bold">${item['Đề xuất']}</td>
+                </tr>`;
+            });
+            document.getElementById('riskTable').innerHTML = tableHTML;
+
+            // Markdown parsing via marked.js
+            document.getElementById('markdownReport').innerHTML = marked.parse(data.management_letter);
+        }
+    </script>
+</body>
+</html>

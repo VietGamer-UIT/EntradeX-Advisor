@@ -1,226 +1,80 @@
-"""
-TaxLens-AI FastAPI entrypoint — local-only; no cloud APIs.
-Run: uvicorn taxlens.api.main:app --reload --host 127.0.0.1 --port 8000
-"""
+import os
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from langchain_core.messages import HumanMessage
+from dotenv import load_dotenv
 
-from __future__ import annotations
+# Load môi trường
+load_dotenv()
 
-from typing import Any
+# Khởi tạo Graph
+from taxlens.agents.agent_router import build_tax_audit_graph
+graph = build_tax_audit_graph()
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
-from pydantic import BaseModel, Field
+app = FastAPI(title="TaxLens Enterprise API", version="1.0.0")
 
-from taxlens import __version__
-from taxlens.agents.registry import (
-    AuditReportDraftAgent,
-    BankReconciliationAgent,
-    TransferPricingAgent,
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-from taxlens.agents.tax_compliance import TaxComplianceAgent
-from taxlens.api.deps import Role, role_dependency
-from taxlens.audit.logger import load_recent
-from taxlens.config import UPLOAD_DIR
-from taxlens.ingestion.excel_csv import load_general_ledger, normalize_gl_columns
-from taxlens.masking import mask_sensitive_text
-from taxlens.risk.scoring import score_transactions, top_risk_percentile
-from taxlens.services.flagging import flag_transaction_ledger_mismatch
 
-app = FastAPI(title="TaxLens-AI", version=__version__, description="Local-first tax & audit intelligence API")
+# Phục vụ Frontend HTML Tĩnh
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
-dep_staff_admin = role_dependency({Role.staff, Role.admin})
-dep_manager_admin = role_dependency({Role.manager, Role.admin})
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    with open("frontend/index.html", "r", encoding="utf-8") as f:
+        return f.read()
 
+@app.post("/api/v1/audit")
+async def process_audit(
+    files: list[UploadFile] = File(...),
+    audit_firm_name: str = Form("Forvis Mazars"),
+    client_name: str = Form("Vinamilk")
+):
+    """API cốt lõi xử lý Audit Fieldwork đến Reporting"""
+    # 1. Đọc files
+    file_info = []
+    for file in files:
+        content = await file.read()
+        file_info.append({"filename": file.filename, "size": len(content)})
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "TaxLens-AI", "version": __version__}
-
-
-class TaxComplianceRequest(BaseModel):
-    question: str = Field(..., description="Tax/audit question (will be masked before RAG)")
-
-
-@app.post("/api/v1/staff/tax-compliance-check")
-async def staff_tax_compliance_check(
-    body: TaxComplianceRequest,
-    _: Role = Depends(dep_staff_admin),
-) -> dict[str, Any]:
-    """Staff: run Tax Compliance Agent (RAG + citations); human must validate."""
-    agent = TaxComplianceAgent()
-    result = agent.run({"question": body.question})
-    return {
-        "agent": result.agent_name,
-        "steps": result.steps,
-        "output": result.structured_output,
-        "citations": result.citations,
-        "confidence": result.confidence,
-        "requires_human_review": result.requires_human_review,
-        "editable": True,
+    # 2. Setup State (Bypass HitL by auto-approving for full 1-click flow)
+    thread_id = "api_thread_" + os.urandom(4).hex()
+    config = {"configurable": {"thread_id": thread_id}}
+    
+    initial_state = {
+        "messages": [HumanMessage(content="Start Audit")],
+        "raw_data": {"files": file_info},
+        "audit_firm_name": audit_firm_name,
+        "client_name": client_name,
+        "is_approved": True, # Tự động duyệt để lấy Báo cáo cuối luôn
+        "review_note": ""
     }
-
-
-class UploadGLResponse(BaseModel):
-    rows_preview: int
-    columns: list[str]
-    message: str
-
-
-@app.post("/api/v1/staff/upload-gl", response_model=UploadGLResponse)
-async def staff_upload_gl(
-    file: UploadFile = File(...),
-    _: Role = Depends(dep_staff_admin),
-) -> UploadGLResponse:
-    """Staff: upload GL Excel/CSV (stored on-premise under data/uploads)."""
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    dest = UPLOAD_DIR / (file.filename or "upload.dat")
-    content = await file.read()
-    dest.write_bytes(content)
+    
     try:
-        df = normalize_gl_columns(load_general_ledger(dest))
-    except Exception as e:
-        raise HTTPException(400, f"Could not parse file: {e}") from e
-    return UploadGLResponse(
-        rows_preview=min(10, len(df)),
-        columns=[str(c) for c in df.columns],
-        message=f"Stored at {dest}",
-    )
-
-
-class RiskDashboardResponse(BaseModel):
-    total_scored: int
-    top_risk_count: int
-    top_risk: list[dict[str, Any]]
-
-
-@app.get("/api/v1/manager/risk-dashboard", response_model=RiskDashboardResponse)
-async def manager_risk_dashboard(
-    _: Role = Depends(dep_manager_admin),
-) -> RiskDashboardResponse:
-    """Manager: materiality-style ranked risks (dynamic from uploaded GL or fallback)."""
-    import os
-    import pandas as pd
-    
-    latest_file = None
-    if UPLOAD_DIR.exists():
-        files = [f for f in UPLOAD_DIR.iterdir() if f.is_file() and f.suffix.lower() in ('.csv', '.xlsx', '.xls')]
-        if files:
-            latest_file = max(files, key=os.path.getmtime)
-            
-    rows = []
-    if latest_file:
-        try:
-            df = normalize_gl_columns(load_general_ledger(latest_file))
-            rows = df.to_dict(orient="records")
-        except Exception:
-            pass
-            
-    if not rows:
-        # Fallback to demo
-        rows = [
-            {
-                "id": "V-1001",
-                "amount": 12_500_000.0,
-                "vat_expected": 1_250_000.0,
-                "vat_actual": 900_000.0,
-                "ledger_amount_match": 0.0,
-                "invoice_duplicate_signal": 0.2,
-            },
-            {
-                "id": "V-1002",
-                "amount": 50_000_000.0,
-                "vat_expected": 0.0,
-                "vat_actual": 0.0,
-                "ledger_amount_match": 1.0,
-                "invoice_duplicate_signal": 0.0,
-            },
-        ]
+        # Chạy một mạch từ Hunter -> Oracle -> Manager -> Report -> END
+        res = graph.invoke(initial_state, config)
         
-    df_stats = pd.DataFrame(rows)
-    amt_col = pd.Series([0])
-    if 'amount' in df_stats.columns:
-        amt_col = pd.to_numeric(df_stats['amount'], errors='coerce').fillna(0)
-    elif 'so_tien' in df_stats.columns:
-        amt_col = pd.to_numeric(df_stats['so_tien'], errors='coerce').fillna(0)
+        # 3. Trích xuất JSON Response
+        working_papers = res.get("working_papers", {}).get("standardized_findings", [])
+        legal_context = res.get("working_papers", {}).get("Legal_Context", "")
+        management_letter = res.get("messages", [])[-1].content if res.get("messages") else "Lỗi sinh báo cáo"
         
-    gl_stats = {
-        "amount_mean": float(amt_col.mean()) if not amt_col.empty else 20_000_000.0,
-        "amount_std": float(amt_col.std()) if len(amt_col) > 1 else 15_000_000.0
-    }
-    
-    scored = score_transactions(rows, gl_stats)
-    top = top_risk_percentile(scored)
-    
-    return RiskDashboardResponse(
-        total_scored=len(scored),
-        top_risk_count=len(top),
-        top_risk=[
-            {
-                "transaction_id": s.transaction_id,
-                "risk_score": s.risk_score,
-                "attribution": s.attribution_summary,
+        return JSONResponse(content={
+            "status": "success",
+            "audit_firm": audit_firm_name,
+            "client": client_name,
+            "data": {
+                "working_papers": working_papers,
+                "legal_context": legal_context,
+                "management_letter": management_letter
             }
-            for s in top
-        ],
-    )
-
-
-class MaskRequest(BaseModel):
-    text: str
-
-
-@app.post("/api/v1/staff/mask-preview")
-async def staff_mask_preview(
-    body: MaskRequest,
-    _: Role = Depends(dep_staff_admin),
-) -> dict[str, str]:
-    m = mask_sensitive_text(body.text)
-    return {"masked": m.masked_text}
-
-
-class CompareRequest(BaseModel):
-    invoice_amount: float
-    ledger_amount: float
-
-
-@app.post("/api/v1/staff/flag-compare")
-async def staff_flag_compare(
-    body: CompareRequest,
-    _: Role = Depends(dep_staff_admin),
-) -> dict[str, Any]:
-    return flag_transaction_ledger_mismatch(body.invoice_amount, body.ledger_amount)
-
-
-@app.get("/api/v1/manager/audit-log")
-async def manager_audit_log(
-    _: Role = Depends(dep_manager_admin),
-    limit: int = 100,
-) -> list[dict[str, Any]]:
-    recs = load_recent(limit)
-    return [r.model_dump(mode="json") for r in recs]
-
-
-@app.post("/api/v1/agents/bank-reconciliation")
-async def agent_bank_recon(
-    context: dict[str, Any],
-    _: Role = Depends(dep_staff_admin),
-) -> dict[str, Any]:
-    r = BankReconciliationAgent().run(context)
-    return r.model_dump()
-
-
-@app.post("/api/v1/agents/transfer-pricing")
-async def agent_tp(
-    context: dict[str, Any],
-    _: Role = Depends(dep_manager_admin),
-) -> dict[str, Any]:
-    r = TransferPricingAgent().run(context)
-    return r.model_dump()
-
-
-@app.post("/api/v1/agents/audit-report-draft")
-async def agent_audit_draft(
-    context: dict[str, Any],
-    _: Role = Depends(dep_manager_admin),
-) -> dict[str, Any]:
-    r = AuditReportDraftAgent().run(context)
-    return r.model_dump()
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})

@@ -1,58 +1,48 @@
 <div align="center">
-  <h1>⚖️ TaxLens-AI: Open-Core Edition</h1>
-  <h3>The Ultimate 3-Headed Enterprise AI Auditor</h3>
+  <h1>⚖️ TaxLens-AI: Enterprise 1-Click Edition</h1>
+  <h3>Full-Stack SaaS for Big 4 Audit Firms</h3>
   <p>
-    <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python">
-    <img src="https://img.shields.io/badge/Streamlit-1.32+-red.svg" alt="Streamlit">
-    <img src="https://img.shields.io/badge/LangGraph-0.0.30-orange.svg" alt="LangGraph">
-    <img src="https://img.shields.io/badge/Open--Core-Startup-purple.svg" alt="OpenCore">
+    <img src="https://img.shields.io/badge/FastAPI-0.110+-green.svg" alt="FastAPI">
+    <img src="https://img.shields.io/badge/Frontend-Vanilla_JS_Tailwind-blue.svg" alt="Frontend">
+    <img src="https://img.shields.io/badge/LangGraph-Gemini_Flash-orange.svg" alt="LangGraph">
   </p>
 </div>
 
 ---
 
-**TaxLens-AI** marks its definitive pivot into an **Enterprise Open-Core Product**, engineered specifically for international Big 4 audit firms (e.g., Forvis Mazars). We have aggressively decoupled operations into a unified Role-Based Access Control (RBAC) architecture orchestrated by a 3-Headed LangGraph Agent system.
+**TaxLens-AI** marks its definitive pivot into a **Full-Stack Web App** tailored for 1-click startup experiences on Windows. The core has been stripped of slow Streamlit UI and local Ollama dependencies, shifting to a high-speed FastAPI + HTML/Tailwind frontend powered entirely by Google Gemini 1.5 Flash API.
 
-## 🚀 The 3 Pillars of Power (Core Features)
+## 🚀 The 4 Pillars (No-NPM Architecture)
 
-1. **🛡️ Thợ Săn Lỗi (Hunter Agent - Junior Level)**
-   - **Mục Định:** Đóng vai trò Data Cruncher.
-   - **Sức Mạnh:** Tiêu thụ hàng loạt file báo cáo khổng lồ (Sổ cái, Trial Balance, XML Invoices). Áp dụng thuật toán đối chiếu siêu tốc (VAT, CIT, FCT/Transfer Pricing) mà không sập hệ thống.
-2. **🧠 Từ Điển Sống (Oracle Agent - Senior Level)**
-   - **Mục Định:** Khám phá Luật Thuế Real-time.
-   - **Sức Mạnh:** Xóa bỏ khái niệm Vector Database tốn dung lượng ổ đĩa. Sử dụng **Stealth RAG Cổng Thông Tin Chính Phủ VN**. Nó bẻ gãy Cloudflare 403 bằng `fake-useragent` và retry thông minh để đem về các phân tích từ LLM sống trên Ram.
-3. **✒️ Máy In Báo Cáo (Report Agent - Manager Level)**
-   - **Mục Định:** Khâu ấn định dòng tiền và danh dự pháp lý của Big 4.
-   - **Sức Mạnh:** Dựa vào nút bấm duy nhất của Manager (PHÊ DUYỆT), tự động sinh chuỗi **Management Letter** đẹp tiêu chuẩn, gãy gọn mọi rủi ro với phong cách văn bản pháp lý cứng cáp.
+1. **The Backend Engine:** FastAPI runs on `127.0.0.1:8000`, injecting `UploadFile` endpoints directly into a LangGraph `GraphState`.
+2. **The Frontend UI:** 100% Vanilla JS and TailwindCSS via CDN served as static files over FastAPI. No Node.js required.
+3. **The Multi-Agent AI:** Hunter Agent crunches Pandas DataFrame errors. Oracle Agent fetches real-time web laws.
+4. **1-Click Magic:** `start_taxlens.bat` sets up mock data, launches the server, and pops up the browser.
 
-## 🏗️ 3-Headed RBAC Architecture
+## 🏗️ Technical Architecture
 
-```mermaid
-graph TD
-    A([🔐 Login Select Role]) --> B{Streamlit User RBAC}
-    
-    B -->|Junior| C[File Uploader Drag/Drop]
-    B -->|Senior| D[Chatbot Oracle RAG]
-    B -->|Manager| E[Command Center Dashboard]
-    
-    C -->|Trigger| F(Hunter Agent)
-    D -->|Chat Query| G(Oracle Agent)
-    E -->|Click Approve| H(Report Agent)
-    
-    F --> I[(Working Papers State)]
-    G --> I
-    I --> H
-    H --> J[📄 Markdown Management Letter]
+```text
+┌──────────────────────────┐         ┌───────────────────────────┐         ┌─────────────────────┐
+│  Browser (index.html)    │ ────────▶ FastAPI Backend (main.py) │ ────────▶ LangGraph Engine    │
+│  - TailwindCSS           │   JSON  │ - POST /api/v1/audit      │  State  │ - Hunter Node       │
+│  - File Drag & Drop      │ ◀──────── │ - StaticFiles Mount       │ ◀──────── - Oracle RAG Node   │
+└──────────────────────────┘         └───────────────────────────┘         └─────────────────────┘
+                                                                                      | API
+                                                                                      ▼
+                                                                           Google Gemini 1.5 Flash
 ```
 
-## ⚡ Quick Start
+## ⚡ Quick Start (The Manager Way)
 
+1. Mở file `.env` và nhập API key của bạn:
+```env
+GOOGLE_API_KEY=your_gemini_api_key_here
+```
+2. Cài đặt Python Dependencies:
 ```bash
-# Cài đặt siêu tân binh
 pip install -r requirements.txt
-
-# Khởi động RBAC UI (nhớ điền API Key vào Sidebar)
-streamlit run frontend/app.py
 ```
+3. Khởi động **1-Click**: Click đúp vào file `start_taxlens.bat`.
+4. Kéo các file mock trong thư mục `sample_data/` vào giao diện và cảm nhận.
 
-*Built by Antigravity as the Ultimate Startup Tax Blueprint.*
+*Powered by TaxLens-AI Engine. Core architecture created by Đoàn Hoàng Việt (Việt Gamer).*

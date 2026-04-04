@@ -1,48 +1,49 @@
 <div align="center">
-  <h1>⚖️ TaxLens-AI: Enterprise 1-Click Edition</h1>
-  <h3>Full-Stack SaaS for Big 4 Audit Firms</h3>
+  <h1>🏢 TaxLens-AI: Enterprise B2B SaaS</h1>
+  <h3>The Ultimate Multi-Class AI Tax Audit Pipeline</h3>
   <p>
-    <img src="https://img.shields.io/badge/FastAPI-0.110+-green.svg" alt="FastAPI">
+    <img src="https://img.shields.io/badge/Backend-FastAPI_SQLAlchemy-green.svg" alt="FastAPI">
     <img src="https://img.shields.io/badge/Frontend-Vanilla_JS_Tailwind-blue.svg" alt="Frontend">
-    <img src="https://img.shields.io/badge/LangGraph-Gemini_Flash-orange.svg" alt="LangGraph">
+    <img src="https://img.shields.io/badge/AI_Engine-LangGraph_Gemini-orange.svg" alt="LangGraph">
   </p>
 </div>
 
 ---
 
-**TaxLens-AI** marks its definitive pivot into a **Full-Stack Web App** tailored for 1-click startup experiences on Windows. The core has been stripped of slow Streamlit UI and local Ollama dependencies, shifting to a high-speed FastAPI + HTML/Tailwind frontend powered entirely by Google Gemini 1.5 Flash API.
+**TaxLens-AI** đã lột xác hoàn toàn thành một nền tảng **Enterprise B2B SaaS** sẵn sàng phục vụ cấp độ Production cho các hãng Kiểm toán Độc lập (như Forvis Mazars). Phá vỡ giới hạn truyền thống, nền tảng sử dụng kiến trúc Single Page Application (SPA), tích hợp Database truy xuất lịch sử, cùng năng lực xử lý hàng ngàn dòng Pandas song song cùng Google Gemini 1.5 Pro.
 
-## 🚀 The 4 Pillars (No-NPM Architecture)
+## 🚀 Tính năng Cốt lõi
+- **Kiến trúc Database-Driven:** SQLAlchemy + SQLite. Lưu toàn bộ JSON Working Papers và Management Letter vĩnh viễn.
+- **Enterprise Dashboard:** Giao diện SPA siêu tốc, phân quyền Admin, 4 Metrics KPI thời thực.
+- **Data Pipeline Đa Nhãn (Multi-class):** Phân loại rủi ro kế toán `[CLASS_1_VAT_LEAK]`, `[CLASS_2_FAKE_INVOICE]`, `[CLASS_3_CIT_REJECT]`.
+- **Luật Sư Thép (Bulletproof Oracle):** Tích hợp Try..Except bắt 404, không ảo giác, trích dẫn cứng luật hiện hành (NĐ 123/2020, Thông tư 78/2021).
 
-1. **The Backend Engine:** FastAPI runs on `127.0.0.1:8000`, injecting `UploadFile` endpoints directly into a LangGraph `GraphState`.
-2. **The Frontend UI:** 100% Vanilla JS and TailwindCSS via CDN served as static files over FastAPI. No Node.js required.
-3. **The Multi-Agent AI:** Hunter Agent crunches Pandas DataFrame errors. Oracle Agent fetches real-time web laws.
-4. **1-Click Magic:** `start_taxlens.bat` sets up mock data, launches the server, and pops up the browser.
-
-## 🏗️ Technical Architecture
-
+## 🏗️ Kiến trúc Hệ thống
+*Hoàn toàn không sử dụng Streamlit hay Node.js. 100% Cấu trúc Tối giản*
 ```text
-┌──────────────────────────┐         ┌───────────────────────────┐         ┌─────────────────────┐
-│  Browser (index.html)    │ ────────▶ FastAPI Backend (main.py) │ ────────▶ LangGraph Engine    │
-│  - TailwindCSS           │   JSON  │ - POST /api/v1/audit      │  State  │ - Hunter Node       │
-│  - File Drag & Drop      │ ◀──────── │ - StaticFiles Mount       │ ◀──────── - Oracle RAG Node   │
-└──────────────────────────┘         └───────────────────────────┘         └─────────────────────┘
-                                                                                      | API
-                                                                                      ▼
-                                                                           Google Gemini 1.5 Flash
+taxlens/
+├── api/             # Backend FastAPI Core
+│   ├── main.py      # Routers & Dependencies 
+│   ├── database.py  # SQLAlchemy Connection
+│   └── models.py    # Database Models (AuditReport)
+├── agents/          # Langgraph AI Multi-Agents
+│   └── agent_router.py 
+frontend/            
+└── index.html       # Single Page Application (Tailwind/JS)
 ```
 
-## ⚡ Quick Start (The Manager Way)
+## ⚡ Bắt Đầu Nhanh (1-Click Deploy)
 
-1. Mở file `.env` và nhập API key của bạn:
+1. Tải bộ máy: `git clone https://github.com/VietGamer-UIT/TaxLens-AI.git`
+2. Mở file `.env` và nhập API key:
 ```env
 GOOGLE_API_KEY=your_gemini_api_key_here
 ```
-2. Cài đặt Python Dependencies:
+3. Cài cắm thư viện:
 ```bash
 pip install -r requirements.txt
 ```
-3. Khởi động **1-Click**: Click đúp vào file `start_taxlens.bat`.
-4. Kéo các file mock trong thư mục `sample_data/` vào giao diện và cảm nhận.
+4. **Khởi Động 1 Nốt Nhạc:** Click đúp file `start_taxlens.bat` trên Windows (Máy sẽ tự tạo Database SQLite, sinh 5000 dòng file Test và mở trình duyệt).
 
-*Powered by TaxLens-AI Engine. Core architecture created by Đoàn Hoàng Việt (Việt Gamer).*
+---
+*Developed by Đoàn Hoàng Việt (Việt Gamer) - Principal Developer.*
